@@ -22,9 +22,20 @@ else:
 st.title("💬 Mandy 的對話記帳 App")
 st.write("請在下方輸入你的花費，例如：「買保養品1000」或「500吃」")
 
-user_input = st.text_input("輸入記帳內容...", key="input_text")
+# 【魔法核心】建立一個清除輸入框的特別功能
+def clear_text():
+    st.session_state.user_text = st.session_state.widget_text
+    st.session_state.widget_text = ""
 
-if st.button("送出記帳") and user_input:
+# 使用者輸入框（綁定自動清除的魔法）
+st.text_input("輸入記帳內容...", key="widget_text", on_change=clear_text)
+
+# 從記憶體撈出剛剛打的字來處理記帳
+if "user_text" in st.session_state and st.session_state.user_text:
+    user_input = st.session_state.user_text
+    # 清除記憶體，確保不重複觸發
+    st.session_state.user_text = ""
+    
     amount = 0
     category = "其他"
     today_str = datetime.today().strftime('%Y-%m-%d')
@@ -58,7 +69,6 @@ if not st.session_state.ledger.empty:
     st.session_state.ledger['金額'] = pd.to_numeric(st.session_state.ledger['金額'], errors='coerce').fillna(0).astype(int)
     st.session_state.ledger['分類'] = st.session_state.ledger['分類'].fillna('其他').astype(str)
     
-    # 1. 歷史趨勢圖（使用 Streamlit 內建折線圖，免下載套件）
     st.subheader("📈 歷史每月總消費變化趨勢")
     monthly_trend = st.session_state.ledger.groupby('月份')['金額'].sum()
     if not monthly_trend.empty:
@@ -66,7 +76,6 @@ if not st.session_state.ledger.empty:
     
     st.markdown("---")
     
-    # 2. 月份選擇與結算
     all_months = sorted(st.session_state.ledger['月份'].dropna().unique(), reverse=True)
     if all_months:
         selected_month = st.selectbox("📆 請選擇你想查看的結算月份：", all_months)
@@ -77,12 +86,10 @@ if not st.session_state.ledger.empty:
         
         category_totals = month_df.groupby('分類')['金額'].sum()
         
-        # 3. 消費比例圖（使用 Streamlit 內建長條圖，完美適應手機排版）
         if category_totals.sum() > 0:
             st.subheader(f"📊 {selected_month} 各類別花費圖表")
             st.bar_chart(category_totals)
         
-        # 4. 文字統計
         st.subheader(f"💡 {selected_month} 各分類花費統計")
         st.write(f"💰 **該月總花費：** {category_totals.sum()} 元")
         for cat in ["餐飲食品", "美妝娛樂", "居家生活", "交通運輸", "醫療保健", "其他"]:
