@@ -1,21 +1,8 @@
-import os
-import sys
-
-# 【全自動防禦】如果雲端缺工具，程式自己會強行在背景下載，不需任何額外檔案
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    os.system(f"{sys.executable} -m pip install matplotlib")
-    import matplotlib.pyplot as plt
-
 import streamlit as st
 import pandas as pd
 import re
+import os
 from datetime import datetime
-
-# 讓 matplotlib 支援中文顯示
-plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
-plt.rcParams['axes.unicode_minus'] = False
 
 CSV_FILE = "mandy_ledger.csv"
 
@@ -71,34 +58,31 @@ if not st.session_state.ledger.empty:
     st.session_state.ledger['金額'] = pd.to_numeric(st.session_state.ledger['金額'], errors='coerce').fillna(0).astype(int)
     st.session_state.ledger['分類'] = st.session_state.ledger['分類'].fillna('其他').astype(str)
     
+    # 1. 歷史趨勢圖（使用 Streamlit 內建折線圖，免下載套件）
     st.subheader("📈 歷史每月總消費變化趨勢")
     monthly_trend = st.session_state.ledger.groupby('月份')['金額'].sum()
     if not monthly_trend.empty:
-        fig_trend, ax_trend = plt.subplots(figsize=(7, 3))
-        ax_trend.plot(monthly_trend.index, monthly_trend.values, marker='o', color='#4CAF50', linewidth=2)
-        ax_trend.grid(True, linestyle='--', alpha=0.6)
-        st.pyplot(fig_trend)
+        st.line_chart(monthly_trend)
     
     st.markdown("---")
     
+    # 2. 月份選擇與結算
     all_months = sorted(st.session_state.ledger['月份'].dropna().unique(), reverse=True)
     if all_months:
         selected_month = st.selectbox("📆 請選擇你想查看的結算月份：", all_months)
         month_df = st.session_state.ledger[st.session_state.ledger['月份'] == selected_month]
         
         st.subheader(f"📋 {selected_month} 月份詳細紀錄")
-        st.dataframe(month_df[['日期', '品項', '金額', '分類']])
+        st.dataframe(month_df[['日期', '品項', '金額', '分類']], use_container_width=True)
         
         category_totals = month_df.groupby('分類')['金額'].sum()
         
+        # 3. 消費比例圖（使用 Streamlit 內建長條圖，完美適應手機排版）
         if category_totals.sum() > 0:
-            st.subheader(f"🍕 {selected_month} 消費比例")
-            fig_pie, ax_pie = plt.subplots(figsize=(5, 5))
-            colors = ['#ff9999','#66b3ff','#99ff99','#ffcc99','#c2c2f0','#ffb3e6']
-            ax_pie.pie(category_totals, labels=category_totals.index, autopct='%1.1f%%', startangle=90, colors=colors[:len(category_totals)])
-            ax_pie.axis('equal') 
-            st.pyplot(fig_pie)
+            st.subheader(f"📊 {selected_month} 各類別花費圖表")
+            st.bar_chart(category_totals)
         
+        # 4. 文字統計
         st.subheader(f"💡 {selected_month} 各分類花費統計")
         st.write(f"💰 **該月總花費：** {category_totals.sum()} 元")
         for cat in ["餐飲食品", "美妝娛樂", "居家生活", "交通運輸", "醫療保健", "其他"]:
