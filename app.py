@@ -40,20 +40,18 @@ if "user_text" in st.session_state and st.session_state.user_text:
     if numbers:
         amount = int(numbers[0])
     
-    # 💡 智慧分類規則（在這裡擴充了：中餐、大餐、宵夜、聚餐、買菜、食材 等吃喝字眼）
-    if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "網球", "游泳", "打", "爬山", "登山", "露營", "按摩", "跳舞", "舞蹈", "路跑"]):
+    # 💡 終極生活智慧分類規則
+    if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "网球", "網球", "游泳", "打", "爬山", "登山", "露營", "按摩", "跳舞", "舞蹈", "路跑", "皮拉提斯"]):
         category = "運動休閒"
     elif any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
         category = "交通運輸"
-    elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子", "美甲", "美睫", "逛街"]):
+    elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子", "美甲", "美睫", "逛街", "洗頭", "剪頭髮", "護髮", "染髮", "燙髮", "屈臣氏", "康是美", "洗髮", "剪髮"]):
         category = "美妝娛樂"
     elif any(x in user_input for x in ["吃", "飯", "喝", "晚餐", "午餐", "早餐", "中餐", "大餐", "宵夜", "聚餐", "買菜", "食材", "食品", "點心", "飲料", "咖啡", "餅乾", "零食", "蛋糕", "麵包", "水果", "手搖"]):
-        category = "餐飲食物" if "餐飲食物" in st.session_state.get('ledger', pd.DataFrame()).columns else "餐飲食品"
-        # 統一使用「餐飲食品」作為分類名稱
         category = "餐飲食品"
     elif any(x in user_input for x in ["房租", "水電", "瓦斯", "網路", "生活用品", "衛生紙", "日常", "家"]):
         category = "居家生活"
-    elif any(x in user_input for x in ["看醫生", "醫", "藥", "保健食品", "診所", "口罩"]):
+    elif any(x in user_input for x in ["看醫生", "醫", "藥", "保健食品", "診所", "口罩", "醫美", "肉毒", "雷射", "皮秒"]):
         category = "醫療保健"
 
     new_data = pd.DataFrame([{'日期': today_str, '月份': month_str, '品項': user_input, '金額': int(amount), '分類': category}])
@@ -84,7 +82,7 @@ if not st.session_state.ledger.empty:
         st.subheader(f"📋 {selected_month} 月份詳細紀錄")
         st.dataframe(month_df[['日期', '品項', '金額', '分類']], use_container_width=True)
         
-        # ⚙️ 下拉選單刪除功能
+        # 下拉選單刪除功能
         st.markdown("⚙️ **資料管理（刪除打錯的紀錄）**")
         delete_options = {f"[{idx}] {row['日期']} - {row['品項']}": idx for idx, row in month_df.iterrows()}
         if delete_options:
