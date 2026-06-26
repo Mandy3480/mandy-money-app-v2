@@ -6,13 +6,11 @@ from datetime import datetime
 
 CSV_FILE = "mandy_ledger.csv"
 
-# 自動讀取或初始化資料檔案
 if os.path.exists(CSV_FILE):
     try:
         df_existing = pd.read_csv(CSV_FILE)
         df_existing['金額'] = pd.to_numeric(df_existing['金額'], errors='coerce').fillna(0).astype(int)
         df_existing['分類'] = df_existing['分類'].fillna('其他').astype(str)
-        # 自動修正可能殘留的舊分類名稱
         df_existing['分類'] = df_existing['分類'].replace('運動修行', '運動休閒')
         st.session_state.ledger = df_existing
     except:
@@ -20,19 +18,15 @@ if os.path.exists(CSV_FILE):
 else:
     st.session_state.ledger = pd.DataFrame(columns=['日期', '月份', '品項', '金額', '分類'])
 
-# 網頁大標題
 st.title("💬 Mandy 的對話記帳 App")
 st.write("請在下方輸入你的花費，例如：「買保養品1000」或「500吃」")
 
-# 建立一個清除輸入框的特別功能
 def clear_text():
     st.session_state.user_text = st.session_state.widget_text
     st.session_state.widget_text = ""
 
-# 使用者輸入框
 st.text_input("輸入記帳內容...", key="widget_text", on_change=clear_text)
 
-# 從記憶體撈出剛剛打的字來處理記帳
 if "user_text" in st.session_state and st.session_state.user_text:
     user_input = st.session_state.user_text
     st.session_state.user_text = ""
@@ -46,7 +40,6 @@ if "user_text" in st.session_state and st.session_state.user_text:
     if numbers:
         amount = int(numbers[0])
     
-    # 💡 智慧分類規則（在這裡多補了：跳舞、爬山、路跑、登山、馬拉松）
     if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "網球", "游泳", "打", "爬山", "登山", "露營", "按摩", "跳舞", "舞蹈", "路跑"]):
         category = "運動休閒"
     elif any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
@@ -62,12 +55,10 @@ if "user_text" in st.session_state and st.session_state.user_text:
 
     new_data = pd.DataFrame([{'日期': today_str, '月份': month_str, '品項': user_input, '金額': int(amount), '分類': category}])
     st.session_state.ledger = pd.concat([st.session_state.ledger, new_data], ignore_index=True)
-    # 存檔前再次確保分類名稱正確
     st.session_state.ledger['分類'] = st.session_state.ledger['分類'].replace('運動修行', '運動休閒')
-    st.session_state.ledger.to_csv(CSV_FILE, index=False, encoding='utf-8-sig')
+    st.session_file = st.session_state.ledger.to_csv(CSV_FILE, index=False, encoding='utf-8-sig')
     st.success(f"🎉 記帳成功！已自動歸類到【{category}】，金額：{amount} 元")
 
-# --- 下半部：分析儀表板 ---
 st.markdown("---")
 st.header("📊 Mandy 的月結算與趨勢分析")
 
@@ -90,6 +81,25 @@ if not st.session_state.ledger.empty:
         st.subheader(f"📋 {selected_month} 月份詳細紀錄")
         st.dataframe(month_df[['日期', '品項', '金額', '分類']], use_container_width=True)
         
+        # 💡 【全新大升級：改用下拉選單刪除，防止打錯字】
+        st.markdown("⚙️ **資料管理（刪除打錯的紀錄）**")
+        
+        # 建立選項清單，格式為："[序號] 品項名稱"
+        delete_options = {f"[{idx}] {row['日期']} - {row['品項']}": idx for idx, row in month_df.iterrows()}
+        
+        if delete_options:
+            selected_delete_label = st.selectbox("請選擇你想刪除的紀錄：", list(delete_options.keys()))
+            actual_delete_index = delete_options[selected_delete_label]
+            
+            if st.button("🗑️ 確認刪除所選紀錄"):
+                st.session_state.ledger = st.session_state.ledger.drop(actual_delete_index)
+                st.session_state.ledger.to_csv(CSV_FILE, index=False, encoding='utf-8-sig')
+                st.warning(f"已成功刪除：{selected_delete_label}！")
+                st.rerun()
+        else:
+            st.info("該月份目前沒有可以刪除的紀錄。")
+
+        st.markdown("---")
         category_totals = month_df.groupby('分類')['金額'].sum()
         
         if category_totals.sum() > 0:
