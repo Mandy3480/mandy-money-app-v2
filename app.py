@@ -22,18 +22,17 @@ else:
 st.title("💬 Mandy 的對話記帳 App")
 st.write("請在下方輸入你的花費，例如：「買保養品1000」或「500吃」")
 
-# 【魔法核心】建立一個清除輸入框的特別功能
+# 建立一個清除輸入框的特別功能
 def clear_text():
     st.session_state.user_text = st.session_state.widget_text
     st.session_state.widget_text = ""
 
-# 使用者輸入框（綁定自動清除的魔法）
+# 使用者輸入框
 st.text_input("輸入記帳內容...", key="widget_text", on_change=clear_text)
 
 # 從記憶體撈出剛剛打的字來處理記帳
 if "user_text" in st.session_state and st.session_state.user_text:
     user_input = st.session_state.user_text
-    # 清除記憶體，確保不重複觸發
     st.session_state.user_text = ""
     
     amount = 0
@@ -45,11 +44,14 @@ if "user_text" in st.session_state and st.session_state.user_text:
     if numbers:
         amount = int(numbers[0])
     
-    if any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
+    # 💡 升級版智慧分類規則（大幅擴充生活字庫與動詞防呆）
+    if any(x in user_input for x in ["運動", "修行", "瑜珈", "健身", "跑步", "馬拉松", "冥想", "打坐", "課", "教練", "拜墊", "心靈", "羽球", "球", "網球", "游泳", "打"]):
+        category = "運動修行"
+    elif any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
         category = "交通運輸"
-    elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子"]):
+    elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子", "美甲", "美睫", "逛街"]):
         category = "美妝娛樂"
-    elif any(x in user_input for x in ["吃", "飯", "喝", "晚餐", "午餐", "早餐", "食品", "點心", "飲料", "咖啡"]):
+    elif any(x in user_input for x in ["吃", "飯", "喝", "晚餐", "午餐", "早餐", "食品", "點心", "飲料", "咖啡", "餅乾", "零食", "蛋糕", "麵包", "水果", "手搖"]):
         category = "餐飲食品"
     elif any(x in user_input for x in ["房租", "水電", "瓦斯", "網路", "生活用品", "衛生紙", "日常", "家"]):
         category = "居家生活"
@@ -92,7 +94,8 @@ if not st.session_state.ledger.empty:
         
         st.subheader(f"💡 {selected_month} 各分類花費統計")
         st.write(f"💰 **該月總花費：** {category_totals.sum()} 元")
-        for cat in ["餐飲食品", "美妝娛樂", "居家生活", "交通運輸", "醫療保健", "其他"]:
+        
+        for cat in ["餐飲食品", "美妝娛樂", "居家生活", "交通運輸", "醫療保健", "運動修行", "其他"]:
             st.write(f"▪️ {cat}：`{category_totals.get(cat, 0)}` 元")
 else:
     st.info("目前還沒有任何記帳資料，快在上方輸入第一筆花費吧！")
