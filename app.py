@@ -12,6 +12,8 @@ if os.path.exists(CSV_FILE):
         df_existing = pd.read_csv(CSV_FILE)
         df_existing['金額'] = pd.to_numeric(df_existing['金額'], errors='coerce').fillna(0).astype(int)
         df_existing['分類'] = df_existing['分類'].fillna('其他').astype(str)
+        # 防呆：順便把之前不小心存成「運動修行」的舊資料自動修正為「運動休閒」
+        df_existing['分類'] = df_existing['分類'].replace('運動修行', '運動休閒')
         st.session_state.ledger = df_existing
     except:
         st.session_state.ledger = pd.DataFrame(columns=['日期', '月份', '品項', '金額', '分類'])
@@ -44,9 +46,9 @@ if "user_text" in st.session_state and st.session_state.user_text:
     if numbers:
         amount = int(numbers[0])
     
-    # 💡 升級版智慧分類規則（大幅擴充生活字庫與動詞防呆）
-    if any(x in user_input for x in ["運動", "修行", "瑜珈", "健身", "跑步", "馬拉松", "冥想", "打坐", "課", "教練", "拜墊", "心靈", "羽球", "球", "網球", "游泳", "打"]):
-        category = "運動修行"
+    # 💡 智慧分類規則（修正為：運動休閒）
+    if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "網球", "游泳", "打", "爬山", "露營", "按摩"]):
+        category = "運動休閒"
     elif any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
         category = "交通運輸"
     elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子", "美甲", "美睫", "逛街"]):
@@ -60,6 +62,8 @@ if "user_text" in st.session_state and st.session_state.user_text:
 
     new_data = pd.DataFrame([{'日期': today_str, '月份': month_str, '品項': user_input, '金額': int(amount), '分類': category}])
     st.session_state.ledger = pd.concat([st.session_state.ledger, new_data], ignore_index=True)
+    # 把這一次記帳也存回檔案
+    st.session_state.ledger['分類'] = st.session_state.ledger['分類'].replace('運動修行', '運動休閒')
     st.session_state.ledger.to_csv(CSV_FILE, index=False, encoding='utf-8-sig')
     st.success(f"🎉 記帳成功！已自動歸類到【{category}】，金額：{amount} 元")
 
@@ -95,7 +99,7 @@ if not st.session_state.ledger.empty:
         st.subheader(f"💡 {selected_month} 各分類花費統計")
         st.write(f"💰 **該月總花費：** {category_totals.sum()} 元")
         
-        for cat in ["餐飲食品", "美妝娛樂", "居家生活", "交通運輸", "醫療保健", "運動修行", "其他"]:
+        for cat in ["餐飲食品", "美妝娛樂", "居家生活", "交通運輸", "醫療保健", "運動休閒", "其他"]:
             st.write(f"▪️ {cat}：`{category_totals.get(cat, 0)}` 元")
 else:
     st.info("目前還沒有任何記帳資料，快在上方輸入第一筆花費吧！")
