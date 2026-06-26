@@ -12,7 +12,7 @@ if os.path.exists(CSV_FILE):
         df_existing = pd.read_csv(CSV_FILE)
         df_existing['金額'] = pd.to_numeric(df_existing['金額'], errors='coerce').fillna(0).astype(int)
         df_existing['分類'] = df_existing['分類'].fillna('其他').astype(str)
-        # 防呆：順便把之前不小心存成「運動修行」的舊資料自動修正為「運動休閒」
+        # 自動修正可能殘留的舊分類名稱
         df_existing['分類'] = df_existing['分類'].replace('運動修行', '運動休閒')
         st.session_state.ledger = df_existing
     except:
@@ -46,8 +46,8 @@ if "user_text" in st.session_state and st.session_state.user_text:
     if numbers:
         amount = int(numbers[0])
     
-    # 💡 智慧分類規則（修正為：運動休閒）
-    if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "網球", "游泳", "打", "爬山", "露營", "按摩"]):
+    # 💡 智慧分類規則（在這裡多補了：跳舞、爬山、路跑、登山、馬拉松）
+    if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "網球", "游泳", "打", "爬山", "登山", "露營", "按摩", "跳舞", "舞蹈", "路跑"]):
         category = "運動休閒"
     elif any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
         category = "交通運輸"
@@ -62,7 +62,7 @@ if "user_text" in st.session_state and st.session_state.user_text:
 
     new_data = pd.DataFrame([{'日期': today_str, '月份': month_str, '品項': user_input, '金額': int(amount), '分類': category}])
     st.session_state.ledger = pd.concat([st.session_state.ledger, new_data], ignore_index=True)
-    # 把這一次記帳也存回檔案
+    # 存檔前再次確保分類名稱正確
     st.session_state.ledger['分類'] = st.session_state.ledger['分類'].replace('運動修行', '運動休閒')
     st.session_state.ledger.to_csv(CSV_FILE, index=False, encoding='utf-8-sig')
     st.success(f"🎉 記帳成功！已自動歸類到【{category}】，金額：{amount} 元")
