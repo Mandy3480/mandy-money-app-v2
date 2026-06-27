@@ -88,13 +88,14 @@ if "user_text" in st.session_state and st.session_state.user_text:
     if numbers:
         amount = int(numbers[0])
     
+    # 💡 終極生活智慧分類規則（吃喝大補帖：新增水、星巴克、手搖飲）
     if any(x in user_input for x in ["運動", "休閒", "瑜珈", "健身", "跑步", "馬拉松", "羽球", "球", "网球", "網球", "游泳", "打", "爬山", "登山", "露營", "按摩", "跳舞", "舞蹈", "路跑", "皮拉提斯"]):
         category = "運動休閒"
     elif any(x in user_input for x in ["交通", "車", "捷運", "公車", "計程車", "油錢", "高鐵", "火車", "悠遊卡"]):
         category = "交通運輸"
-    elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子", "美甲", "美睫", "逛街", "洗頭", "剪頭髮", "護髮", "染髮", "燙髮", "屈臣氏", "康是美", "洗髮", "剪髮"]):
+    elif any(x in user_input for x in ["保養品", "化妝品", "衣服", "玩", "看電影", "買", "娛樂", "包包", "鞋子", "美甲", "美睫", "逛街", "洗頭", "剪頭髮", "護髮", "染髮", "燙髮", "洗髮", "剪髮", "燙頭", "染頭", "屈臣氏", "康是美"]):
         category = "美妝娛樂"
-    elif any(x in user_input for x in ["吃", "飯", "喝", "晚餐", "午餐", "早餐", "中餐", "大餐", "宵夜", "聚餐", "買菜", "食材", "食品", "點心", "飲料", "咖啡", "餅乾", "零食", "蛋糕", "麵包", "水果", "手搖"]):
+    elif any(x in user_input for x in ["吃", "飯", "喝", "晚餐", "午餐", "早餐", "中餐", "大餐", "宵夜", "聚餐", "買菜", "食材", "食品", "點心", "飲料", "咖啡", "餅乾", "零食", "蛋糕", "麵包", "水果", "手搖", "手搖飲", "星巴克", "水"]):
         category = "餐飲食品"
     elif any(x in user_input for x in ["房租", "水電", "瓦斯", "網路", "生活用品", "衛生紙", "日常", "家"]):
         category = "居家生活"
@@ -108,14 +109,14 @@ if "user_text" in st.session_state and st.session_state.user_text:
     
     # 🚀 自動即時上傳回 GitHub 保險箱
     upload_csv_to_github()
-    st.success(f"🎉 記帳成功且已安全備份至 GitHub！金額：{amount} 元")
+    st.success(f"🎉 記帳成功且已安全備份至 GitHub！已歸類到【{category}】，金額：{amount} 元")
 
 st.markdown("---")
 st.header("📊 Mandy 的月結算與趨勢分析")
 
 if not st.session_state.ledger.empty:
     st.session_state.ledger['金額'] = pd.to_numeric(st.session_state.ledger['金額'], errors='coerce').fillna(0).astype(int)
-    st.session_state.ledger['分類'] = st.session_state.ledger['分類'].fillna('修改').astype(str)
+    st.session_state.ledger['分類'] = st.session_state.ledger['分類'].fillna('其他').astype(str)
     
     st.subheader("📈 歷史每月總消費變化趨勢")
     monthly_trend = st.session_state.ledger.groupby('月份')['金額'].sum()
@@ -132,6 +133,7 @@ if not st.session_state.ledger.empty:
         st.subheader(f"📋 {selected_month} 月份詳細紀錄")
         st.dataframe(month_df[['日期', '品項', '金額', '分類']], use_container_width=True)
         
+        # 下拉選單刪除功能
         st.markdown("⚙️ **資料管理（刪除打錯的紀錄）**")
         delete_options = {f"[{idx}] {row['日期']} - {row['品項']}": idx for idx, row in month_df.iterrows()}
         if delete_options:
